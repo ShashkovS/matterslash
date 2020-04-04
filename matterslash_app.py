@@ -11,6 +11,7 @@ app = Flask(__name__)
 
 api_key, api_secret, token = open('creds.txt').read().splitlines(keepends=False)
 
+
 # This is just a test route. It is autotested after deploy
 @app.route('/test_app_is_working_kQK74RxmgPPm69')
 def test_app_is_working():
@@ -41,11 +42,7 @@ def internal_error_handler(e=None):
     return response
 
 
-@app.route('/zoom_who', methods=['POST', 'GET'])
-def api():
-    print('request.data', request.data)
-    print('request.form', request.form)
-    print('request.args', request.args)
+def list_zoom_lic():
     client = ZoomClient(api_key, api_secret)
     all_users = []
     user_list_response = client.user.list(status='active', page_size=300, page_number=1)
@@ -57,16 +54,31 @@ def api():
         all_users.extend(user_list['users'])
 
     all_licensed = [f"| {user['last_name']} | {user['first_name']} | {user['email']} |" for user in all_users if user['type'] == 2]
-    print(all_licensed)
     message = {
         'response_type': 'in_channel',
-        'text': '''---
-#### Текущие лицензии zoom
-
-| Фамилия | Имя | Почта   |
-|:--------|:----|:--------|        
-''' + '\n'.join(all_licensed),
+        'text': '''---\n#### Текущие лицензии zoom\n\n| Фамилия | Имя | Почта   |\n|:--------|:----|:--------|'''
+                + '\n'.join(all_licensed),
     }
+    return message
+
+
+@app.route('/zoom_who', methods=['POST', 'GET'])
+def api():
+    print('request.data', request.data)
+    print('request.form', request.form)
+    print('request.args', request.args)
+    if request.form["token"] != 'token':
+        message = {
+            'response_type': 'in_channel',
+            'text': 'Низзя!'
+        }
+    elif request.form["channel_name"] != 'zoom_licenses':
+        message = {
+            'response_type': 'in_channel',
+            'text': 'Этот запрос можно задавать только из канала zoom_licenses :)'
+        }
+    else:
+        message = list_zoom_lic()
     response = jsonify(message)
     response.status_code = 200
     return response
