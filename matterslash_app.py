@@ -71,11 +71,11 @@ def api():
             'response_type': 'in_channel',
             'text': 'Низзя!'
         }
-    elif request.form["channel_name"] != channel_name:
-        message = {
-            'response_type': 'in_channel',
-            'text': 'Этот запрос можно задавать только из канала zoom_licenses :)'
-        }
+    # elif request.form["channel_name"] != channel_name:
+    #     message = {
+    #         'response_type': 'in_channel',
+    #         'text': 'Этот запрос можно задавать только из канала zoom_licenses :)'
+    #     }
     else:
         message = list_zoom_lic()
     response = jsonify(message)
