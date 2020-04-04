@@ -64,9 +64,10 @@ def list_zoom_lic():
 
 @app.route('/zoom_who', methods=['POST', 'GET'])
 def api():
-    print('request.data', request.data)
-    print('request.form', request.form)
-    print('request.args', request.args)
+    with open('/web/matterslash/matterslash/log.txt', 'w', encoding='utf-8') as f:
+        print('request.data', request.data, file=f)
+        print('request.form', request.form, file=f)
+        print('request.args', request.args, file=f)
     if request.form["token"] != 'token':
         message = {
             'response_type': 'in_channel',
