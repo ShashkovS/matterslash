@@ -108,6 +108,9 @@ sudo systemctl restart gunicorn.matterslash.socket
 # Проверяем
 curl --unix-socket /web/matterslash/matterslash.socket http
 
+# Логи
+journalctl -u gunicorn.matterslash.service
+systemctl status gunicorn.matterslash.service
 
 # Настраиваем nginx (здесь настройки СТРОГО отдельного домена или поддомена). Если хочется держать в папке, то настраивать nginx нужно по-другому
 echo '

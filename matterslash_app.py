@@ -42,7 +42,10 @@ def internal_error_handler(e=None):
 
 
 @app.route('/zoom_who', methods=['POST', 'GET'])
-def api(*args, **kwargs):
+def api():
+    print('request.data', request.data)
+    print('request.form', request.form)
+    print('request.args', request.args)
     client = ZoomClient(api_key, api_secret)
     all_users = []
     user_list_response = client.user.list(status='active', page_size=300, page_number=1)
@@ -53,7 +56,7 @@ def api(*args, **kwargs):
         user_list = json.loads(user_list_response.content)
         all_users.extend(user_list['users'])
 
-    all_licensed = [f"| {user['last_name']} | {user['first_name']} | {user['dk@179.ru']} |" for user in all_users if user['type'] == 2]
+    all_licensed = [f"| {user['last_name']} | {user['first_name']} | {user['email']} |" for user in all_users if user['type'] == 2]
     print(all_licensed)
     message = {
         'response_type': 'in_channel',
