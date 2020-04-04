@@ -9,7 +9,7 @@ CUR_PATH = pathlib.Path(__file__).parent.absolute()
 
 app = Flask(__name__)
 
-api_key, api_secret, token = open('creds.txt').read().splitlines(keepends=False)
+api_key, api_secret, token, channel_id = open('creds.txt').read().splitlines(keepends=False)
 
 
 # This is just a test route. It is autotested after deploy
@@ -73,7 +73,7 @@ def api():
             'response_type': 'in_channel',
             'text': 'Низзя!'
         }
-    elif request.form["channel_name"] != 'zoom_licenses':
+    elif request.form["channel_id"] != channel_id:
         message = {
             'response_type': 'in_channel',
             'text': 'Этот запрос можно задавать только из канала zoom_licenses :)'
