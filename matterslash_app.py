@@ -56,8 +56,8 @@ def list_zoom_lic():
     all_licensed = [f"| {user['last_name']} | {user['first_name']} | {user['email']} |" for user in all_users if user['type'] == 2]
     message = {
         'response_type': 'in_channel',
-        'text': '''---#### Текущие лицензии zoom\n\n| Фамилия | Имя | Почта   |\n|:--------|:----|:--------|\n'''
-                + '\n'.join(all_licensed),
+        'text': '''---\n#### Текущие лицензии zoom\n\n| Фамилия | Имя | Почта   |\n|:--------|:----|:--------|\n'''
+                + '\n'.join(all_licensed) + '\n\n---',
     }
     return message
 
