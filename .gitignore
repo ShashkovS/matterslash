@@ -1,0 +1,35 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+
+# Distribution / packaging
+.Python
+env/
+build/
+develop-eggs/
+dist/
+eggs/
+.eggs/
+
+# virtualenv
+.venv
+venv/
+ENV/
+
+# PyCharm
+.idea/
+
+# database
+db/tracks_prod.db
+
+config.py
+data/*
+__pycache__
+**/*.aux
+**/*.bbl
+**/*.blg
+**/*.dvi
+**/*.log
+**/*.sav
+**/*.bak
+**/*.synctex
+creds.txt
