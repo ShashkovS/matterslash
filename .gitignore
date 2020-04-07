@@ -33,3 +33,4 @@ __pycache__
 **/*.bak
 **/*.synctex
 creds.txt
+teachers.txt

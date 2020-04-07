@@ -5,12 +5,27 @@ import json
 import requests
 import time
 import jwt
+import os
 
 CUR_PATH = pathlib.Path(__file__).parent.absolute()
+os.chdir(CUR_PATH)
 
 app = Flask(__name__)
 
 api_key, api_secret, token_who, token_lic = open('creds.txt').read().splitlines(keepends=False)
+
+
+def simplify_name(name):
+    return name.strip().lower().replace('ё', 'е').replace('-', '').replace(' ', '').replace('\t', '')
+
+
+try:
+    teachers = open('teachers.txt', 'r', encoding='utf-8').read().splitlines()
+except:
+    teachers = []
+for i, row in enumerate(teachers):
+    fio, _, m = row.rpartition('\t')
+    teachers[i] = (simplify_name(fio), m)
 
 email_to_user_id = {}
 
@@ -204,30 +219,46 @@ def zoom_who_api():
     return response
 
 
-@app.route('/zoom_lic', methods=['POST', 'GET'])
-def zoom_lic_api():
-    with open('/web/matterslash/matterslash/log.txt', 'w', encoding='utf-8') as f:
-        print('request.form', request.form, file=f)
+def move_with_given_parms(parms):
+    if len(parms) != 2:
+        return {
+            'response_type': 'in_channel',
+            'text': 'Напишите запрос в виде `/zoom_lic [от_кого] [кому]`, например, `/zoom_lic шашков кириенко` или `/zoom_lic shashkov@179.ru dk@179.ru`'
+        }
+    for i, addr in enumerate(parms):
+        if '@' not in addr:
+            addr_n = simplify_name(addr)
+            tst = [email for fio, email in teachers if fio.startswith(addr_n)]
+            if len(tst) == 1:
+                parms[i] = tst[0]
+            else:
+                return {
+                    'response_type': 'in_channel',
+                    'text': 'Напишите запрос в виде `/zoom_lic [от_кого] [кому]`, например, `/zoom_lic шашков кириенко` или `/zoom_lic shashkov@179.ru dk@179.ru`. Сейчас по {} не получилось определить человека.'.format(
+                        addr)
+                }
+    frm, to = parms
+    return move_lic(frm, to)
+
+
+def move_zoom_lic(request):
     if request.form["token"] != token_lic:
-        message = {
+        return {
             'response_type': 'in_channel',
             'text': 'Низзя!'
         }
     elif request.form["channel_name"] != 'zoom_licenses':
-        message = {
+        return {
             'response_type': 'in_channel',
             'text': 'Этот запрос можно задавать только из канала zoom_licenses :)'
         }
-    else:
-        parms = request.form["text"].split()
-        if len(parms) != 2 or '@' not in parms[0] or '@' not in parms[1]:
-            message = {
-                'response_type': 'in_channel',
-                'text': 'Напишите запрос в виде `/zoom_lic [от_кого] [кому]`, например, `/zoom_lic shashkov@179.ru dk@179.ru`'
-            }
-        else:
-            frm, to = parms
-            message = move_lic(frm, to)
+    parms = request.form["text"].split()
+    return move_with_given_parms(parms)
+
+
+@app.route('/zoom_lic', methods=['POST', 'GET'])
+def zoom_lic_api():
+    message = move_zoom_lic(request)
     response = jsonify(message)
     response.status_code = 200
     return response
