@@ -168,7 +168,7 @@ def move_lic(frm: str, to: str) -> dict:
                 'response_type': 'in_channel',
                 'text': USER_NOT_FOUND.format(to)
             }
-        elif response_to.status_code == 400 and response_to.json()['code'] == 200 and tries == 1:
+        elif response_to.status_code == 400 and response_to.json()['code'] in (200, 3412) and tries == 1:
             if frm not in email_to_user_id and not cache_updated:
                 list_zoom_users()
             if frm not in email_to_user_id:
@@ -181,7 +181,7 @@ def move_lic(frm: str, to: str) -> dict:
             payload_frm = json.dumps({"type": 1})
             response_frm = requests.request("PATCH", url_frm, data=payload_frm, headers=headers, params=querystring)
             print('response_frm', response_frm, response_frm.text)
-        elif response_to.status_code == 400 and response_to.json()['code'] == 200 and tries == 2:
+        elif response_to.status_code == 400 and response_to.json()['code'] in (200, 3412) and tries == 2:
             return {
                 'response_type': 'in_channel',
                 'text': NO_LIC.format(frm, to, response_to.text)
@@ -200,8 +200,8 @@ def list_zoom_lic():
 
 @app.route('/zoom_who', methods=['POST', 'GET'])
 def zoom_who_api():
-    with open('/web/matterslash/matterslash/log.txt', 'w', encoding='utf-8') as f:
-        print('request.form', request.form, file=f)
+    # with open('/web/matterslash/matterslash/log.txt', 'w', encoding='utf-8') as f:
+    #     print('request.form', request.form, file=f)
     if request.form["token"] != token_who:
         message = {
             'response_type': 'in_channel',
@@ -265,4 +265,5 @@ def zoom_lic_api():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0")
+    # app.run(host="0.0.0.0")
+    move_with_given_parms(['кири', 'шаш'])
