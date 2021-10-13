@@ -31,6 +31,7 @@ email_to_user_id = {}
 
 ZOOM_WHO = '''\
 #### Текущие лицензии zoom
+[Расписание лицензий](https://docs.google.com/spreadsheets/d/1XrHuXyzJxUgsRNfgQD5ALy4VmtWt9LzTBsc17WLrZxA/edit#gid=0)
 
 | Фамилия | Имя | Почта   |
 |:--------|:----|:--------|
