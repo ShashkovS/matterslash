@@ -44,12 +44,12 @@ usermod -a -G matterslash nginx
 
 # виртуальное окружение
 cd /web/matterslash
-python3 -m venv --without-pip matterslash_env
+python3.9 -m venv --without-pip matterslash_env
 source /web/matterslash/matterslash_env/bin/activate
-curl https://bootstrap.pypa.io/get-pip.py | python3
+curl https://bootstrap.pypa.io/get-pip.py | python3.9
 deactivate
 source /web/matterslash/matterslash_env/bin/activate
-pip install flask gunicorn werkzeug zoomus
+pip install flask gunicorn werkzeug pyjwt requests
 deactivate
 
 # Клонируем репу

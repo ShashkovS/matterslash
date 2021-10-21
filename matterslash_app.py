@@ -12,7 +12,7 @@ os.chdir(CUR_PATH)
 
 app = Flask(__name__)
 
-api_key, api_secret, token_who, token_lic = open('creds.txt').read().splitlines(keepends=False)
+api_key, api_secret, token_who, token_lic, token_add = open('creds.txt').read().splitlines(keepends=False)
 
 
 def simplify_name(name):
@@ -316,7 +316,7 @@ def send_zoom_invite(parms):
 
 
 def add_zoom_user(request):
-    if request.form["token"] != token_lic:
+    if request.form["token"] != token_add:
         return {
             'response_type': 'in_channel',
             'text': 'Низзя!'
