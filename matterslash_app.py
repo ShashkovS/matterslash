@@ -33,8 +33,8 @@ ZOOM_WHO = '''\
 #### Текущие лицензии zoom
 [Расписание лицензий](https://docs.google.com/spreadsheets/d/1XrHuXyzJxUgsRNfgQD5ALy4VmtWt9LzTBsc17WLrZxA/edit#gid=0)
 
-| Фамилия | Имя | Почта   |
-|:--------|:----|:--------|
+| Фамилия | Имя | Почта   |  | Фамилия | Имя | Почта   |
+|:--------|:----|:--------|:-|:--------|:----|:--------|
 {}
 '''
 
@@ -47,7 +47,8 @@ GIVE_LIC_TO = '''\
 '''
 
 USER_NOT_FOUND = '''\
-##### Пользователь {} не найден в zoom. Укажите правильный email.
+##### Пользователь {} не найден в zoom. Укажите правильный email или запросите приглашение при помощи команды вида:
+`/zoom_add shashkov@179.ru`
 '''
 
 UNKNOWN_ERROR = '''\
@@ -60,6 +61,16 @@ NO_LIC = '''\
 Zoom ответил, что «`{}`».
 Попобуйте выполнить `/zoom_who`, чтобы узнать, у кого лицензия.
 Посмотрите [вот в этой гугль-табличке](https://docs.google.com/spreadsheets/d/1XrHuXyzJxUgsRNfgQD5ALy4VmtWt9LzTBsc17WLrZxA/edit#gid=0), кому она сейчас не нужна.
+'''
+
+INVITE_SENT = '''\
+##### Приглашение на адрес {} отправлено.
+'''
+
+INVITE_ERROR = '''\
+##### С отправкой приглашения на адрес {} что-то пошло не так. 
+
+Это точно валидный e-mail? Попробуйте ещё раз. И если не сработает, то обратитесь к Шашкову (shashkov@179.ru).
 '''
 
 
@@ -97,7 +108,7 @@ def generate_jwt_header():
     header = {"alg": "HS256", "typ": "JWT"}
     payload = {"iss": api_key, "exp": int(time.time() + 60)}
     token = jwt.encode(payload, api_secret, algorithm="HS256", headers=header)
-    return {"Authorization": "Bearer {}".format(token.decode("utf-8"))}
+    return {"Authorization": "Bearer {}".format(token)}
 
 
 def update_email_cache(all_users):
@@ -122,10 +133,17 @@ def list_zoom_users(url="https://api.zoom.us/v2/users"):
 
 
 def format_licenced_user(all_users):
-    all_licensed = [f"| {user['last_name']} | {user['first_name']} | `{user['email']}` |" for user in all_users if user['type'] == 2]
+    all_licensed = [user for user in all_users if user['type'] == 2]
+    if len(all_licensed) % 2 != 0:
+        all_licensed.append({'last_name': '', 'first_name': '', 'email': ''})
+    all_licensed_iter = iter(all_licensed)
+    all_licensed_str = []
+    for user1, user2 in zip(all_licensed_iter, all_licensed_iter):
+        all_licensed_str.append(f"| {user1['last_name']} | {user1['first_name']} | `{user1['email']}` | "
+                                f"| {user2['last_name']} | {user2['first_name']} | `{user2['email']}` | ")
     message = {
         'response_type': 'in_channel',
-        'text': ZOOM_WHO.format('\n'.join(all_licensed))
+        'text': ZOOM_WHO.format('\n'.join(all_licensed_str))
     }
     return message
 
@@ -155,14 +173,22 @@ def move_lic(frm: str, to: str) -> dict:
         response_to = requests.request("PATCH", url_to, data=payload_to, headers=headers, params=querystring)
         print('response_to', response_to, response_to.text)
         if response_to.status_code == 204 and tries == 1:
+            # Лицензия упешно перенесена!
+            all_users = list_zoom_users()
+            lic_table = format_licenced_user(all_users)['text'].replace('#### Текущие лицензии zoom', '')  # TODO сделать нормально
+            text = GIVE_LIC_TO.format(to) + lic_table
             return {
                 'response_type': 'in_channel',
-                'text': GIVE_LIC_TO.format(to)
+                'text': text
             }
         elif response_to.status_code == 204 and tries == 2:
+            # Лицензия упешно перенесена!
+            all_users = list_zoom_users()
+            lic_table = format_licenced_user(all_users)['text'].replace('#### Текущие лицензии zoom', '')  # TODO сделать нормально
+            text = MOVE_LIC_FROM_TO.format(frm, to) + lic_table
             return {
                 'response_type': 'in_channel',
-                'text': MOVE_LIC_FROM_TO.format(frm, to)
+                'text': text
             }
         elif response_to.status_code == 404:
             return {
@@ -257,6 +283,53 @@ def move_zoom_lic(request):
     return move_with_given_parms(parms)
 
 
+def send_zoom_invite(parms):
+    if len(parms) != 1 or '@' not in parms[0]:
+        return {
+            'response_type': 'in_channel',
+            'text': 'Напишите запрос в виде `/zoom_add email`, например, `/zoom_add shashkov@179.ru`. На этот адрес придёт приглашение.'
+        }
+    email = parms[0]
+    headers = generate_jwt_header()
+    headers['content-type'] = 'application/json'
+    url_to = f"https://api.zoom.us/v2/users"
+    payload_to = json.dumps({
+        "action": "create",
+        "user_info": {
+            "email": email,
+            "type": 1,
+        }
+    })
+    # Сначала проверим, вдруг лицензии пустуют
+    response_to = requests.request("POST", url_to, data=payload_to, headers=headers)
+    print('response_to', response_to, response_to.text)
+    if response_to.status_code == 201:
+        return {
+            'response_type': 'in_channel',
+            'text': INVITE_SENT.format(email)
+        }
+    else:
+        return {
+            'response_type': 'in_channel',
+            'text': INVITE_ERROR.format(email)
+        }
+
+
+def add_zoom_user(request):
+    if request.form["token"] != token_lic:
+        return {
+            'response_type': 'in_channel',
+            'text': 'Низзя!'
+        }
+    elif request.form["channel_name"] != 'zoom_licenses':
+        return {
+            'response_type': 'in_channel',
+            'text': 'Этот запрос можно задавать только из канала zoom_licenses :)'
+        }
+    parms = request.form["text"].split()
+    return send_zoom_invite(parms)
+
+
 @app.route('/zoom_lic', methods=['POST', 'GET'])
 def zoom_lic_api():
     message = move_zoom_lic(request)
@@ -265,6 +338,16 @@ def zoom_lic_api():
     return response
 
 
+@app.route('/zoom_add', methods=['POST', 'GET'])
+def zoom_add_api():
+    message = add_zoom_user(request)
+    response = jsonify(message)
+    response.status_code = 200
+    return response
+
+
 if __name__ == "__main__":
+    pass
     # app.run(host="0.0.0.0")
-    move_with_given_parms(['кири', 'шаш'])
+    # print(move_with_given_parms(['шашк', 'белоу']))
+    # print(send_zoom_invite(['shashkov+tst@179.ru']))
